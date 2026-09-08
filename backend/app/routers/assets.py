@@ -230,3 +230,101 @@ def compare_agents_by_ip(db: Session = Depends(get_db)):
         },
     }
 
+
+@router.get("/cloud-agents/overview")
+def get_cloud_agents_overview(
+    asset_group: str | None = None,
+    status: str | None = None,
+    db: Session = Depends(get_db),
+):
+    """
+    Returns comprehensive counts and distribution of Qualys Cloud Agents across AWS, Azure, and Network groups.
+    """
+    base_q = db.query(models.Asset)
+    if asset_group and asset_group != "ALL":
+        base_q = base_q.filter(models.Asset.asset_group == asset_group.upper())
+
+    all_assets = base_q.all()
+    total_assets = len(all_assets)
+
+    # Agent classification: has agent_id, tracking_method='AGENT', or agent_status is set
+    agent_assets = [
+        a for a in all_assets 
+        if (a.tracking_method and "AGENT" in a.tracking_method.upper()) or a.agent_id or a.agent_status
+    ]
+    non_agent_assets = [a for a in all_assets if a not in agent_assets]
+
+    # Status breakdown
+    active_agents = [a for a in agent_assets if (a.agent_status or "Active").lower() == "active"]
+    inactive_agents = [a for a in agent_assets if (a.agent_status or "").lower() in ("inactive", "stopped", "offline")]
+    manifest_pending = [a for a in agent_assets if (a.agent_status or "").lower() == "manifest_pending"]
+
+    # Asset group breakdown for Agents
+    aws_agents = [a for a in agent_assets if a.asset_group == "AWS"]
+    azure_agents = [a for a in agent_assets if a.asset_group == "AZURE"]
+    network_agents = [a for a in agent_assets if a.asset_group == "NETWORK"]
+
+    # OS Distribution
+    os_counts: dict[str, int] = {}
+    for a in agent_assets:
+        os_label = "Linux"
+        if a.os:
+            os_lower = a.os.lower()
+            if "windows" in os_lower:
+                os_label = "Windows Server"
+            elif "ubuntu" in os_lower:
+                os_label = "Ubuntu Linux"
+            elif "amazon" in os_lower:
+                os_label = "Amazon Linux"
+            elif "red hat" in os_lower or "rhel" in os_lower:
+                os_label = "Red Hat Enterprise Linux"
+            elif "debian" in os_lower:
+                os_label = "Debian Linux"
+            elif "cisco" in os_lower or "router" in os_lower:
+                os_label = "Network Appliance OS"
+            else:
+                os_label = a.os.split()[0] if a.os else "Linux"
+        os_counts[os_label] = os_counts.get(os_label, 0) + 1
+
+    # Vulnerability counts on agent assets
+    agent_vulns_total = sum(len([d for d in a.detections if d.status != "Fixed"]) for a in agent_assets)
+    agent_crit_vulns = sum(len([d for d in a.detections if d.status != "Fixed" and d.vulnerability and d.vulnerability.severity == 5]) for a in agent_assets)
+    agent_high_vulns = sum(len([d for d in a.detections if d.status != "Fixed" and d.vulnerability and d.vulnerability.severity == 4]) for a in agent_assets)
+
+    return {
+        "status": "success",
+        "total_assets": total_assets,
+        "total_cloud_agents": len(agent_assets),
+        "total_network_scanned_only": len(non_agent_assets),
+        "agent_coverage_rate": round((len(agent_assets) / total_assets * 100), 1) if total_assets else 0.0,
+        "status_breakdown": {
+            "active": len(active_agents) if active_agents else len(agent_assets),
+            "inactive": len(inactive_agents),
+            "manifest_pending": len(manifest_pending),
+        },
+        "asset_group_breakdown": {
+            "aws": {
+                "agents_count": len(aws_agents),
+                "total_group_assets": len([a for a in all_assets if a.asset_group == "AWS"]),
+                "coverage_pct": round((len(aws_agents) / len([a for a in all_assets if a.asset_group == "AWS"]) * 100), 1) if any(a.asset_group == "AWS" for a in all_assets) else 0.0,
+            },
+            "azure": {
+                "agents_count": len(azure_agents),
+                "total_group_assets": len([a for a in all_assets if a.asset_group == "AZURE"]),
+                "coverage_pct": round((len(azure_agents) / len([a for a in all_assets if a.asset_group == "AZURE"]) * 100), 1) if any(a.asset_group == "AZURE" for a in all_assets) else 0.0,
+            },
+            "network": {
+                "agents_count": len(network_agents),
+                "total_group_assets": len([a for a in all_assets if a.asset_group == "NETWORK"]),
+                "coverage_pct": round((len(network_agents) / len([a for a in all_assets if a.asset_group == "NETWORK"]) * 100), 1) if any(a.asset_group == "NETWORK" for a in all_assets) else 0.0,
+            },
+        },
+        "os_breakdown": [{"os": k, "count": v} for k, v in sorted(os_counts.items(), key=lambda x: x[1], reverse=True)],
+        "vulnerability_impact": {
+            "total_open_findings": agent_vulns_total,
+            "critical_sev5": agent_crit_vulns,
+            "high_sev4": agent_high_vulns,
+        },
+    }
+
+

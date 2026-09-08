@@ -31,6 +31,7 @@ import ApmExplorer from './pages/ApmExplorer.jsx'
 import SlaGovernance from './pages/SlaGovernance.jsx'
 import ComplianceEngine from './pages/ComplianceEngine.jsx'
 import ExceptionsManagement from './pages/ExceptionsManagement.jsx'
+import CloudAgents from './pages/CloudAgents.jsx'
 import ReportsHub from './pages/ReportsHub.jsx'
 import AuditLogs from './pages/AuditLogs.jsx'
 import Upload from './pages/Upload.jsx'
@@ -59,6 +60,7 @@ export default function App() {
     if (p.startsWith('/apms')) return { title: 'APM Explorer & CMDB', subtitle: 'APPLICATION RISK CORRELATION' }
     if (p.startsWith('/vulnerabilities')) return { title: 'Vulnerabilities & Findings', subtitle: 'THREAT INTELLIGENCE & REMEDIATION' }
     if (p.startsWith('/sla-governance')) return { title: 'SLA Governance & Remediation Velocity', subtitle: 'REMEDIATION COMPLIANCE & BREACH WATCH' }
+    if (p.startsWith('/cloud-agents')) return { title: 'Qualys Cloud Agents Explorer', subtitle: 'AGENT SENSOR INVENTORY & HEALTH TELEMETRY' }
     if (p.startsWith('/compliance')) return { title: 'Compliance Engine & Security Controls', subtitle: 'MULTI-STANDARD AUDIT READINESS' }
     if (p.startsWith('/exceptions')) return { title: 'Risk Exceptions & False Positive Hub', subtitle: 'GOVERNANCE & RISK ACCEPTANCE' }
     if (p.startsWith('/assets')) return { title: 'Asset Explorer', subtitle: 'UNIFIED MULTI-CLOUD INVENTORY' }
@@ -172,6 +174,25 @@ export default function App() {
                   </div>
                   <span className="px-1.5 py-0.5 rounded-md text-[10px] font-mono bg-slate-100 text-slate-700 font-bold">
                     {counts.assets}
+                  </span>
+                </NavLink>
+
+                <NavLink
+                  to="/cloud-agents"
+                  className={({ isActive }) =>
+                    `flex items-center justify-between px-3 py-2 text-xs font-semibold rounded-xl transition-all ${
+                      isActive
+                        ? 'bg-qblue text-white shadow-md shadow-blue-500/25 font-bold'
+                        : 'text-slate-600 hover:text-qblue hover:bg-blue-50/60 border border-transparent'
+                    }`
+                  }
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Radio size={16} className="text-emerald-500" />
+                    <span>Cloud Agents</span>
+                  </div>
+                  <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-emerald-100 text-emerald-700">
+                    SENSORS
                   </span>
                 </NavLink>
 
@@ -353,6 +374,7 @@ export default function App() {
             <Route path="/apms" element={<ApmExplorer />} />
             <Route path="/assets" element={<Assets />} />
             <Route path="/assets/:id" element={<AssetDetail />} />
+            <Route path="/cloud-agents" element={<CloudAgents />} />
             <Route path="/vulnerabilities" element={<Vulnerabilities />} />
             <Route path="/vulnerabilities/:qid" element={<VulnerabilityDetail />} />
             <Route path="/sla-governance" element={<SlaGovernance />} />

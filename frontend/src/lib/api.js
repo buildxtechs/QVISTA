@@ -56,6 +56,7 @@ export const api = {
   assetDetail: (id) => request(`/assets/${id}`),
   cloudMatchSummary: () => request('/assets/summary/cloud-match'),
   compareAgentsByIp: () => request('/assets/comparison/ip-agents'),
+  cloudAgentsOverview: (params = {}) => request(`/assets/cloud-agents/overview?${new URLSearchParams(params)}`),
 
   // Vulnerabilities
   listVulnerabilities: (params = {}) => request(`/vulnerabilities?${new URLSearchParams(params)}`),
