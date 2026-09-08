@@ -1,5 +1,13 @@
 const BASE = '/api'
 
+function qs(params = {}) {
+  const clean = Object.fromEntries(
+    Object.entries(params).filter(([_, v]) => v !== undefined && v !== null && v !== 'undefined')
+  )
+  const str = new URLSearchParams(clean).toString()
+  return str ? `?${str}` : ''
+}
+
 async function request(path, options = {}) {
   const res = await fetch(`${BASE}${path}`, {
     headers: options.body instanceof FormData ? {} : { 'Content-Type': 'application/json' },
@@ -41,26 +49,26 @@ export const api = {
     form.append('file', file)
     return request('/cmdb/upload', { method: 'POST', body: form })
   },
-  listApms: (params = {}) => request(`/cmdb/apms?${new URLSearchParams(params)}`),
+  listApms: (params = {}) => request(`/cmdb/apms${qs(params)}`),
   apmDetail: (apmId) => request(`/cmdb/apms/${encodeURIComponent(apmId)}`),
 
   // Dashboard
-  dashboardSummary: (params = {}) => request(`/dashboard/summary?${new URLSearchParams(params)}`),
-  dashboardAging: (params = {}) => request(`/dashboard/aging?${new URLSearchParams(params)}`),
+  dashboardSummary: (params = {}) => request(`/dashboard/summary${qs(params)}`),
+  dashboardAging: (params = {}) => request(`/dashboard/aging${qs(params)}`),
   dashboardTrend: () => request('/dashboard/trend'),
   topApplications: () => request('/dashboard/top-vulnerable-applications'),
   topCriticalQids: () => request('/dashboard/top-critical-qids'),
 
   // Assets
-  listAssets: (params = {}) => request(`/assets?${new URLSearchParams(params)}`),
+  listAssets: (params = {}) => request(`/assets${qs(params)}`),
   assetDetail: (id) => request(`/assets/${id}`),
   cloudMatchSummary: () => request('/assets/summary/cloud-match'),
   compareAgentsByIp: () => request('/assets/comparison/ip-agents'),
-  cloudAgentsOverview: (params = {}) => request(`/assets/cloud-agents/overview?${new URLSearchParams(params)}`),
+  cloudAgentsOverview: (params = {}) => request(`/assets/cloud-agents/overview${qs(params)}`),
 
   // Vulnerabilities
-  listVulnerabilities: (params = {}) => request(`/vulnerabilities?${new URLSearchParams(params)}`),
-  listDetectionsGrid: (params = {}) => request(`/vulnerabilities/detections-grid?${new URLSearchParams(params)}`),
+  listVulnerabilities: (params = {}) => request(`/vulnerabilities${qs(params)}`),
+  listDetectionsGrid: (params = {}) => request(`/vulnerabilities/detections-grid${qs(params)}`),
   vulnerabilityDetail: (qid) => request(`/vulnerabilities/${qid}`),
   reopenedSummary: () => request('/vulnerabilities/reopened/summary'),
 
@@ -81,15 +89,15 @@ export const api = {
 
   // Cloud Comparison & Multi-Account Breakdown
   cloudComparison: () => request('/cloud/comparison'),
-  cloudMatrix: (params = {}) => request(`/cloud/matrix?${new URLSearchParams(params)}`),
+  cloudMatrix: (params = {}) => request(`/cloud/matrix${qs(params)}`),
   // Exceptions & Risk Acceptance CRUD
-  listExceptions: (params = {}) => request(`/exceptions?${new URLSearchParams(params)}`),
+  listExceptions: (params = {}) => request(`/exceptions${qs(params)}`),
   createException: (payload) => request('/exceptions', { method: 'POST', body: JSON.stringify(payload) }),
   updateException: (id, payload) => request(`/exceptions/${id}`, { method: 'PUT', body: JSON.stringify(payload) }),
   deleteException: (id) => request(`/exceptions/${id}`, { method: 'DELETE' }),
 
   // SLA Governance & Remediation Intelligence
-  slaGovernance: (params = {}) => request(`/sla/governance-overview?${new URLSearchParams(params)}`),
+  slaGovernance: (params = {}) => request(`/sla/governance-overview${qs(params)}`),
   getSlaRules: () => request('/sla/rules'),
   updateSlaRules: (rules) => request('/sla/rules', { method: 'PUT', body: JSON.stringify(rules) }),
 
@@ -102,7 +110,7 @@ export const api = {
   getWelcomeNote: (user = 'IVM Team') => request(`/ai/welcome-note?user=${encodeURIComponent(user)}`),
 
   // Reports Exporters (IASP, Power BI, Legacy)
-  iaspExportUrl: (params = {}) => `${BASE}/reports/export/iasp.xlsx?${new URLSearchParams(params)}`,
-  powerBiExportUrl: (params = {}) => `${BASE}/reports/export/powerbi.xlsx?${new URLSearchParams(params)}`,
+  iaspExportUrl: (params = {}) => `${BASE}/reports/export/iasp.xlsx${qs(params)}`,
+  powerBiExportUrl: (params = {}) => `${BASE}/reports/export/powerbi.xlsx${qs(params)}`,
   reportUrl: (name) => `${BASE}/reports/${name}`,
 }
