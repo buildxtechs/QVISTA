@@ -46,8 +46,16 @@ def _upsert_asset(db: Session, host: HostRecord) -> models.Asset:
     asset.tracking_method = host.tracking_method
     asset.cloud_provider = host.cloud_provider
     asset.cloud_instance_id = host.cloud_instance_id
+    if host.cloud_account_name:
+        asset.cloud_account_name = host.cloud_account_name
     asset.last_vm_scan = host.last_vuln_scan_datetime
     asset.agent_id = host.agent_id
+    asset.agent_status = host.agent_status or ("Active" if host.tracking_method == "AGENT" else None)
+    
+    # Classify asset group directly from Qualys telemetry
+    from app.models import classify_asset_group
+    asset.asset_group = classify_asset_group(host.os, host.cloud_provider, host.dns or host.fqdn)
+    
     asset.updated_at = dt.datetime.utcnow()
     db.flush()
     return asset

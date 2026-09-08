@@ -61,8 +61,12 @@ class HostRecord:
     tracking_method: str | None
     cloud_provider: str | None
     cloud_instance_id: str | None
-    last_vuln_scan_datetime: dt.datetime | None
-    agent_id: str | None
+    cloud_account_id: str | None = None
+    cloud_account_name: str | None = None
+    last_vuln_scan_datetime: dt.datetime | None = None
+    agent_id: str | None = None
+    agent_status: str | None = "Active"
+    tags: list[str] = field(default_factory=list)
     detections: list[Detection] = field(default_factory=list)
 
 
@@ -197,6 +201,7 @@ class QualysClient:
         tracking = _text(host_el, "TRACKING_METHOD") or ""
         agent_info = host_el.find(".//CLOUD_AGENT") or host_el.find(".//AGENT_INFO") or host_el.find(".//QUALYS_CLOUD_AGENT")
         agent_id = _text(host_el, "AGENT_ID") or (_text(agent_info, "AGENT_ID") if agent_info is not None else None)
+        agent_status = _text(host_el, "AGENT_STATUS") or (_text(agent_info, "STATUS") if agent_info is not None else "Active")
         
         # If Qualys tagged it with QAGENT or Cloud Agent sensor exists
         if "QAGENT" in tracking.upper() or "AGENT" in tracking.upper() or agent_id:
@@ -204,12 +209,21 @@ class QualysClient:
 
         cloud_prov = _text(host_el, "CLOUD_PROVIDER")
         cloud_inst = _text(host_el, "CLOUD_RESOURCE_ID") or _text(host_el, "EC2_INSTANCE_ID") or _text(host_el, "INSTANCE_ID")
+        acct_id = _text(host_el, "AWS_ACCOUNT_ID") or _text(host_el, "ACCOUNT_ID") or _text(host_el, "AZURE_SUBSCRIPTION_ID")
+        acct_name = _text(host_el, "ACCOUNT_NAME") or _text(host_el, "CLOUD_ACCOUNT_NAME")
+
+        # Parse tags
+        tags_list = []
+        for tag_el in host_el.iter("TAG"):
+            tag_name = _text(tag_el, "NAME") or (tag_el.text.strip() if tag_el.text else None)
+            if tag_name:
+                tags_list.append(tag_name)
 
         # Parse EC2 / Cloud attributes if present in XML tags
         if not cloud_prov:
             if cloud_inst and cloud_inst.startswith("i-"):
                 cloud_prov = "AWS"
-            elif _text(host_el, "EC2_INFO") is not None or _text(host_el, "AWS_ACCOUNT_ID") is not None:
+            elif _text(host_el, "EC2_INFO") is not None or acct_id is not None:
                 cloud_prov = "AWS"
             elif _text(host_el, "AZURE_VM_ID") is not None:
                 cloud_prov = "AZURE"
@@ -224,7 +238,11 @@ class QualysClient:
             tracking_method=tracking or "IP",
             cloud_provider=cloud_prov,
             cloud_instance_id=cloud_inst,
+            cloud_account_id=acct_id,
+            cloud_account_name=acct_name,
             last_vuln_scan_datetime=_parse_dt(_text(host_el, "LAST_VULN_SCAN_DATETIME")),
             agent_id=agent_id,
+            agent_status=agent_status or "Active",
+            tags=tags_list,
             detections=detections,
         )
