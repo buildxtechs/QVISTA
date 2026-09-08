@@ -126,7 +126,8 @@ class QualysClient:
         params = {
             "action": "list",
             "show_asset_id": 1,
-            "show_tags": 0,
+            "show_tags": 1,
+            "show_cloud_resource_id": 1,
             "truncation_limit": truncation_limit,
             "output_format": "XML",
         }
@@ -180,6 +181,26 @@ class QualysClient:
                 )
             )
 
+        tracking = _text(host_el, "TRACKING_METHOD") or ""
+        agent_info = host_el.find(".//CLOUD_AGENT") or host_el.find(".//AGENT_INFO") or host_el.find(".//QUALYS_CLOUD_AGENT")
+        agent_id = _text(host_el, "AGENT_ID") or (_text(agent_info, "AGENT_ID") if agent_info is not None else None)
+        
+        # If Qualys tagged it with QAGENT or Cloud Agent sensor exists
+        if "QAGENT" in tracking.upper() or "AGENT" in tracking.upper() or agent_id:
+            tracking = "AGENT"
+
+        cloud_prov = _text(host_el, "CLOUD_PROVIDER")
+        cloud_inst = _text(host_el, "CLOUD_RESOURCE_ID") or _text(host_el, "EC2_INSTANCE_ID") or _text(host_el, "INSTANCE_ID")
+
+        # Parse EC2 / Cloud attributes if present in XML tags
+        if not cloud_prov:
+            if cloud_inst and str(cloud_inst).startswith("i-"):
+                cloud_prov = "AWS"
+            elif _text(host_el, "EC2_INFO") is not None or _text(host_el, "AWS_ACCOUNT_ID") is not None:
+                cloud_prov = "AWS"
+            elif _text(host_el, "AZURE_VM_ID") is not None:
+                cloud_prov = "AZURE"
+
         return HostRecord(
             host_id=_text(host_el, "ID") or _text(host_el, "ASSET_ID") or "",
             ip=_text(host_el, "IP"),
@@ -187,10 +208,10 @@ class QualysClient:
             netbios=_text(host_el, "NETBIOS"),
             fqdn=_text(host_el, "FQDN") or _text(host_el, "DNS"),
             os=_text(host_el, "OS"),
-            tracking_method=_text(host_el, "TRACKING_METHOD"),
-            cloud_provider=_text(host_el, "CLOUD_PROVIDER"),
-            cloud_instance_id=_text(host_el, "CLOUD_RESOURCE_ID") or _text(host_el, "EC2_INSTANCE_ID"),
+            tracking_method=tracking or "IP",
+            cloud_provider=cloud_prov,
+            cloud_instance_id=cloud_inst,
             last_vuln_scan_datetime=_parse_dt(_text(host_el, "LAST_VULN_SCAN_DATETIME")),
-            agent_id=_text(host_el, "AGENT_ID") if host_el.find("AGENT_ID") is not None else None,
+            agent_id=agent_id,
             detections=detections,
         )
