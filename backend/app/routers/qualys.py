@@ -146,7 +146,8 @@ def trigger_sync(background_tasks: BackgroundTasks, db: Session = Depends(get_db
     db.commit()
     db.refresh(sync_record)
 
-    background_tasks.add_task(_run_sync_job, sync_record.id)
+    sync_id = int(sync_record.id)
+    background_tasks.add_task(_run_sync_job, sync_id)
     return sync_record
 
 

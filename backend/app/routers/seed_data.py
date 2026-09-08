@@ -1,5 +1,6 @@
 import datetime as dt
 import random
+from typing import Any
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
@@ -100,7 +101,7 @@ def seed_demo_data(db: Session = Depends(get_db)):
         vulns.append(v)
 
     # 4. AWS Accounts definition
-    aws_accounts = [
+    aws_accounts: list[dict[str, Any]] = [
         {"name": "AWS-Prod-Core", "id": "112233445566", "regions": ["us-east-1", "us-west-2"], "instances_target": 38},
         {"name": "AWS-Payments-PCI", "id": "998877665544", "regions": ["us-east-1", "eu-west-1"], "instances_target": 26},
         {"name": "AWS-DataLake-Analytics", "id": "554433221100", "regions": ["us-east-2", "us-west-2"], "instances_target": 22},
@@ -109,7 +110,7 @@ def seed_demo_data(db: Session = Depends(get_db)):
     ]
 
     # 5. Azure Subscriptions definition
-    azure_subs = [
+    azure_subs: list[dict[str, Any]] = [
         {"name": "Azure-Corp-Production", "id": "sub-4a8f9b21-e304-4c19", "rgs": ["rg-prod-core", "rg-prod-network"], "regions": ["eastus", "westus2"], "instances_target": 32},
         {"name": "Azure-Enterprise-Billing", "id": "sub-91b32f80-77a1-43ef", "rgs": ["rg-fintech-prod", "rg-settlements"], "regions": ["eastus2"], "instances_target": 24},
         {"name": "Azure-DataPlatform-EastUS", "id": "sub-2e88a0bc-5519-482d", "rgs": ["rg-synapse-data", "rg-storage-analytics"], "regions": ["eastus"], "instances_target": 20},
@@ -120,15 +121,18 @@ def seed_demo_data(db: Session = Depends(get_db)):
 
     # Helper to generate simulated assets
     for acct in aws_accounts:
-        target = acct["instances_target"]
-        acct_label = f"{acct['name']} ({acct['id']})"
+        target = int(acct["instances_target"])
+        acct_name = str(acct["name"])
+        acct_id = str(acct["id"])
+        acct_regions: list[str] = acct["regions"]
+        acct_label = f"{acct_name} ({acct_id})"
         for i in range(target):
             is_matched = (i < int(target * 0.88)) # 88% coverage matched in Qualys
             ip_base = f"10.20.{host_counter // 256}.{host_counter % 254 + 1}"
             public_ip = f"54.210.{random.randint(10, 240)}.{random.randint(2, 250)}" if i % 3 == 0 else None
             instance_id = f"i-0{random.randint(100000000000, 999999999999):x}"
-            hostname = f"aws-ec2-{acct['name'].lower()}-{i+1:02d}.corp.internal"
-            region = random.choice(acct["regions"])
+            hostname = f"aws-ec2-{acct_name.lower()}-{i+1:02d}.corp.internal"
+            region = random.choice(acct_regions)
             app_choice = list(apps.values())[i % len(apps)]
             owner_choice = list(owners.values())[i % len(owners)]
             
@@ -206,16 +210,20 @@ def seed_demo_data(db: Session = Depends(get_db)):
 
     # Azure Subscriptions instances
     for sub in azure_subs:
-        target = sub["instances_target"]
-        sub_label = f"{sub['name']} ({sub['id']})"
+        target = int(sub["instances_target"])
+        sub_name = str(sub["name"])
+        sub_id = str(sub["id"])
+        sub_rgs: list[str] = sub["rgs"]
+        sub_regions: list[str] = sub["regions"]
+        sub_label = f"{sub_name} ({sub_id})"
         for i in range(target):
             is_matched = (i < int(target * 0.85)) # 85% coverage
             ip_base = f"10.40.{host_counter // 256}.{host_counter % 254 + 1}"
             public_ip = f"20.120.{random.randint(10, 240)}.{random.randint(2, 250)}" if i % 4 == 0 else None
-            instance_id = f"/subscriptions/{sub['id']}/resourceGroups/{random.choice(sub['rgs'])}/providers/Microsoft.Compute/virtualMachines/vm-{sub['name'].lower()}-{i+1:02d}"
-            hostname = f"az-vm-{sub['name'].lower()}-{i+1:02d}.internal.cloud"
-            region = random.choice(sub["regions"])
-            rg = random.choice(sub["rgs"])
+            instance_id = f"/subscriptions/{sub_id}/resourceGroups/{random.choice(sub_rgs)}/providers/Microsoft.Compute/virtualMachines/vm-{sub_name.lower()}-{i+1:02d}"
+            hostname = f"az-vm-{sub_name.lower()}-{i+1:02d}.internal.cloud"
+            region = random.choice(sub_regions)
+            rg = random.choice(sub_rgs)
             app_choice = list(apps.values())[(i + 2) % len(apps)]
             owner_choice = list(owners.values())[(i + 1) % len(owners)]
 

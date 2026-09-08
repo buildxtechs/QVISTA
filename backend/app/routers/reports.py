@@ -1,5 +1,6 @@
 import io
 from datetime import datetime
+from typing import cast, Any
 import pandas as pd
 from fastapi import APIRouter, Depends, Query
 from fastapi.responses import StreamingResponse
@@ -89,7 +90,7 @@ def _filter_detections(
 
 def _xlsx_response(df: pd.DataFrame, filename: str) -> StreamingResponse:
     buffer = io.BytesIO()
-    with pd.ExcelWriter(buffer, engine="openpyxl") as writer:
+    with pd.ExcelWriter(cast(Any, buffer), engine="openpyxl") as writer:
         df.to_excel(writer, index=False, sheet_name="Findings")
     buffer.seek(0)
     return StreamingResponse(

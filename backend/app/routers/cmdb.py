@@ -65,8 +65,9 @@ async def upload_cmdb_file(
 ):
     """Ingest enterprise CMDB Excel or CSV file mapping APM IDs, Owners, IF/PCI flags, and Correlation IDs."""
     content = await file.read()
+    fname = str(file.filename or "").lower()
     try:
-        if file.filename.lower().endswith((".xlsx", ".xls")):
+        if fname.endswith((".xlsx", ".xls")):
             df = pd.read_excel(io.BytesIO(content))
         else:
             df = pd.read_csv(io.BytesIO(content))
@@ -132,7 +133,7 @@ async def upload_cmdb_file(
             db.add(app)
             db.flush()
         else:
-            app.apm_id = appm_id if not app.apm_id else app.apm_id
+            app.apm_id = apm_id if not app.apm_id else app.apm_id
             app.business_owner = biz_owner or app.business_owner
             app.organization = org or app.organization
             app.internet_facing = is_if or app.internet_facing
@@ -260,7 +261,8 @@ def list_apms(
     # Group CMDB records by APM ID
     apm_groups: dict[str, list[models.CMDBRecord]] = {}
     for r in records:
-        apm_groups.setdefault(r.apm_id, []).append(r)
+        key = str(r.apm_id)
+        apm_groups.setdefault(key, []).append(r)
 
     results = []
     for apm_id, recs in apm_groups.items():

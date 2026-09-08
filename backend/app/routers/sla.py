@@ -1,4 +1,5 @@
 import datetime as dt
+from typing import Any
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy import func
 from sqlalchemy.orm import Session
@@ -57,7 +58,7 @@ def governance_overview(
     compliance_rate = round((within_sla_count / total_open * 100), 1) if total_open > 0 else 100.0
 
     # Severity Breakdown with SLA definitions
-    sev_stats = {
+    sev_stats: dict[int, dict[str, Any]] = {
         5: {"severity": 5, "label": "Severity 5 - Critical", "target_days": 30, "total": 0, "breached": 0, "within": 0},
         4: {"severity": 4, "label": "Severity 4 - High", "target_days": 120, "special_target": "90d for IF/PCI", "total": 0, "breached": 0, "within": 0},
         3: {"severity": 3, "label": "Severity 3 - Medium", "target_days": 180, "total": 0, "breached": 0, "within": 0},
@@ -73,11 +74,11 @@ def governance_overview(
         a = d.asset
         sev = v.severity if v else 3
         if sev in sev_stats:
-            sev_stats[sev]["total"] += 1
+            sev_stats[sev]["total"] = int(sev_stats[sev]["total"]) + 1
             if d.sla_status == "BREACHED":
-                sev_stats[sev]["breached"] += 1
+                sev_stats[sev]["breached"] = int(sev_stats[sev]["breached"]) + 1
             else:
-                sev_stats[sev]["within"] += 1
+                sev_stats[sev]["within"] = int(sev_stats[sev]["within"]) + 1
 
         # Calculate days left
         sla_target = d.sla_days or 30

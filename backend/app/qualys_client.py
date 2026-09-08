@@ -166,7 +166,7 @@ class QualysClient:
                     qid=_text(d, "QID") or "",
                     type=_text(d, "TYPE"),
                     severity=int(_text(d, "SEVERITY") or 0) or None,
-                    port=int(_text(d, "PORT")) if _text(d, "PORT") else None,
+                    port=int(p) if (p := _text(d, "PORT")) and p.strip().isdigit() else None,
                     protocol=_text(d, "PROTOCOL"),
                     ssl=(_text(d, "SSL") == "1"),
                     status=_text(d, "STATUS"),
