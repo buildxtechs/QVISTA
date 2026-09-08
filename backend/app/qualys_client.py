@@ -194,7 +194,7 @@ class QualysClient:
 
         # Parse EC2 / Cloud attributes if present in XML tags
         if not cloud_prov:
-            if cloud_inst and str(cloud_inst).startswith("i-"):
+            if cloud_inst and cloud_inst.startswith("i-"):
                 cloud_prov = "AWS"
             elif _text(host_el, "EC2_INFO") is not None or _text(host_el, "AWS_ACCOUNT_ID") is not None:
                 cloud_prov = "AWS"
