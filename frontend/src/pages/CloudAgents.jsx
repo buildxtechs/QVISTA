@@ -64,12 +64,15 @@ export default function CloudAgents() {
         search: search || undefined,
         page_size: 100,
       })
-      if (res && res.items) {
+      const items = res?.results || res?.items || []
+      if (items.length > 0) {
         // Filter assets tracked by agent
-        const filtered = res.items.filter(
-          (a) => (a.tracking_method && a.tracking_method.includes('AGENT')) || a.agent_id || a.agent_status
+        const filtered = items.filter(
+          (a) => (a.tracking_method && a.tracking_method.toUpperCase().includes('AGENT')) || a.agent_id || a.agent_status
         )
-        setAssetsList(filtered.length > 0 ? filtered : res.items)
+        setAssetsList(filtered.length > 0 ? filtered : items)
+      } else {
+        setAssetsList([])
       }
     } catch (err) {
       console.error('Failed to load agent assets list:', err)
