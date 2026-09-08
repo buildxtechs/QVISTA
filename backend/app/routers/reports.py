@@ -1,5 +1,5 @@
 import io
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import cast, Any
 import pandas as pd
 from fastapi import APIRouter, Depends, Query
@@ -199,7 +199,7 @@ def export_iasp_template(
         })
 
     df = pd.DataFrame(rows, columns=IASP_HEADERS)
-    timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+    timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
     return _xlsx_response(df, f"QVISTA_IASP_Report_{timestamp}.xlsx")
 
 
@@ -302,7 +302,7 @@ def export_powerbi_template(
         })
 
     df = pd.DataFrame(rows, columns=POWERBI_HEADERS)
-    timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+    timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
     return _xlsx_response(df, f"QVISTA_PowerBI_Report_{timestamp}.xlsx")
 
 

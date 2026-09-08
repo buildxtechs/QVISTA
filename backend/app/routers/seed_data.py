@@ -37,7 +37,7 @@ def seed_demo_data(db: Session = Depends(get_db)):
     db.query(models.SyncHistory).delete()
     db.commit()
 
-    now = dt.datetime.utcnow()
+    now = dt.datetime.now(dt.timezone.utc)
 
     # 1. Owners
     owners_data = [

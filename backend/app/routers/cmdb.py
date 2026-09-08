@@ -65,7 +65,7 @@ async def upload_cmdb_file(
 ):
     """Ingest enterprise CMDB Excel or CSV file mapping APM IDs, Owners, IF/PCI flags, and Correlation IDs."""
     content = await file.read()
-    fname = str(file.filename or "").lower()
+    fname = (file.filename or "").lower()
     try:
         if fname.endswith((".xlsx", ".xls")):
             df = pd.read_excel(io.BytesIO(content))
