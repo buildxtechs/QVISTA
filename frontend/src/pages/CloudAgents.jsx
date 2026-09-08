@@ -442,10 +442,11 @@ export default function CloudAgents() {
             <thead className="bg-slate-50 border-b border-slate-200 text-[10px] uppercase font-mono font-bold text-slate-600">
               <tr>
                 <th className="py-3 px-4">Qualys Host / IP</th>
-                <th className="py-3 px-4">Cloud Provider &amp; Group</th>
-                <th className="py-3 px-4">Operating System</th>
-                <th className="py-3 px-4">Tracking Sensor</th>
-                <th className="py-3 px-4">APM &amp; Correlation ID</th>
+                <th className="py-3 px-4">EC2 Instance ID</th>
+                <th className="py-3 px-4">AWS / Cloud Account ID</th>
+                <th className="py-3 px-4">Account Name (AWS INV)</th>
+                <th className="py-3 px-4">Mapped APM ID &amp; App</th>
+                <th className="py-3 px-4">IT App Owner</th>
                 <th className="py-3 px-4 text-center">Sensor Status</th>
                 <th className="py-3 px-4 text-right">Actions</th>
               </tr>
@@ -453,13 +454,13 @@ export default function CloudAgents() {
             <tbody className="divide-y divide-slate-100">
               {assetsLoading ? (
                 <tr>
-                  <td colSpan={7} className="py-8 text-center text-slate-500 font-mono">
+                  <td colSpan={8} className="py-8 text-center text-slate-500 font-mono">
                     Loading Qualys Cloud Agent inventory...
                   </td>
                 </tr>
               ) : assetsList.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="py-8 text-center text-slate-500 font-mono">
+                  <td colSpan={8} className="py-8 text-center text-slate-500 font-mono">
                     No matching Cloud Agent assets found.
                   </td>
                 </tr>
@@ -470,36 +471,49 @@ export default function CloudAgents() {
                       <div className="font-mono font-bold text-slate-900">{a.dns || a.fqdn || a.ip}</div>
                       <div className="text-[10px] font-mono text-slate-400">{a.ip}</div>
                     </td>
+                    <td className="py-3 px-4 font-mono font-semibold text-slate-800">
+                      {a.cloud_instance_id ? (
+                        <span className="text-qblue">{a.cloud_instance_id}</span>
+                      ) : (
+                        <span className="text-slate-400">i-00000000000</span>
+                      )}
+                    </td>
+                    <td className="py-3 px-4 font-mono font-bold text-slate-700">
+                      {a.cloud_account_id ? (
+                        <span className="px-2 py-0.5 rounded bg-slate-100 border border-slate-200">
+                          {a.cloud_account_id}
+                        </span>
+                      ) : (
+                        <span className="text-slate-400">—</span>
+                      )}
+                    </td>
                     <td className="py-3 px-4">
-                      <span className={`px-2 py-0.5 rounded text-[9px] font-bold font-mono border ${
+                      <div className="font-bold text-slate-900">
+                        {a.cloud_account_name || `${a.asset_group || 'AWS'} Account`}
+                      </div>
+                      <span className={`px-1.5 py-0.2 rounded text-[8px] font-bold font-mono border ${
                         a.asset_group === 'AWS' ? 'bg-amber-50 text-amber-800 border-amber-200' :
                         a.asset_group === 'AZURE' ? 'bg-blue-50 text-blue-800 border-blue-200' :
                         'bg-emerald-50 text-emerald-800 border-emerald-200'
                       }`}>
                         {a.asset_group || 'AWS'}
                       </span>
-                      {a.cloud_account_name && (
-                        <div className="text-[10px] text-slate-500 mt-0.5">{a.cloud_account_name}</div>
-                      )}
-                    </td>
-                    <td className="py-3 px-4 text-slate-700">
-                      {a.os || 'Linux'}
-                    </td>
-                    <td className="py-3 px-4">
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-blue-50 text-qblue border border-blue-200 flex items-center gap-1 w-fit">
-                        <Cpu size={10} />
-                        {a.tracking_method || 'AGENT'}
-                      </span>
                     </td>
                     <td className="py-3 px-4">
                       {a.apm_id ? (
                         <div>
                           <div className="font-mono font-bold text-qblue">{a.apm_id}</div>
-                          <div className="text-[10px] text-slate-500 font-mono">Corr: {a.correlation_id || 'N/A'}</div>
+                          <div className="text-[11px] text-slate-700 font-medium">{a.application || 'Enterprise App'}</div>
                         </div>
                       ) : (
-                        <span className="text-slate-400 font-mono text-[11px]">Unmapped</span>
+                        <div>
+                          <span className="text-slate-400 font-mono text-[11px]">Unmapped</span>
+                          {a.application && <div className="text-[11px] text-slate-600">{a.application}</div>}
+                        </div>
                       )}
+                    </td>
+                    <td className="py-3 px-4 text-slate-700 font-medium">
+                      {a.app_owner || a.owner || 'SecOps Team'}
                     </td>
                     <td className="py-3 px-4 text-center">
                       <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-green-50 text-green-700 border border-green-200 inline-flex items-center gap-1">

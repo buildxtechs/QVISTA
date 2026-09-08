@@ -55,39 +55,66 @@ export default function AssetDetail() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="glass-panel p-5 rounded-2xl border border-slate-200 space-y-3">
           <h3 className="text-xs uppercase tracking-wider text-slate-500 font-mono font-bold flex items-center gap-2">
-            <Server size={14} className="text-qred" /> Host Metadata
+            <Server size={14} className="text-qred" /> Host &amp; Cloud Agent Metadata
           </h3>
           <dl className="space-y-2 text-xs divide-y divide-slate-100">
             <Row label="IP Address" value={asset.ip} mono />
             <Row label="FQDN" value={asset.fqdn} />
             <Row label="Operating System" value={asset.os} />
-            <Row label="Cloud Provider" value={asset.cloud_provider} />
-            <Row label="Cloud Instance ID" value={asset.cloud_instance_id} mono />
-            <Row label="Owner / Team" value={asset.owner} />
+            <Row label="Asset Group" value={asset.asset_group || asset.cloud_provider} />
+            <Row label="Tracking Sensor" value={asset.tracking_method || 'AGENT'} mono />
+            <Row label="Sensor Health" value={asset.agent_status || 'Active'} />
             <Row label="Asset Status" value={asset.asset_status} />
             <Row label="Last Qualys Scan" value={asset.last_scan ? new Date(asset.last_scan).toLocaleString() : '—'} />
           </dl>
         </div>
 
-        <div className="glass-panel p-5 rounded-2xl border border-slate-200 lg:col-span-2 flex flex-col justify-between">
+        <div className="glass-panel p-5 rounded-2xl border border-slate-200 flex flex-col justify-between">
+          <div>
+            <h3 className="text-xs uppercase tracking-wider text-slate-500 font-mono font-bold mb-3 flex items-center gap-2">
+              <Cloud size={14} className="text-qblue" /> AWS / EC2 Account &amp; APM Mapping
+            </h3>
+            <dl className="space-y-2 text-xs divide-y divide-slate-100">
+              <Row label="Cloud Provider" value={asset.cloud_provider || 'AWS'} />
+              <Row label="EC2 Instance ID" value={asset.cloud_instance_id} mono />
+              <Row label="AWS Account ID" value={asset.cloud_account_id} mono />
+              <Row label="AWS Account Name" value={asset.cloud_account_name} />
+              <Row label="APM ID" value={asset.apm_id} mono />
+              <Row label="Application Name" value={asset.application} />
+              <Row label="IT App Owner" value={asset.app_owner || asset.owner} />
+              <Row label="Correlation ID" value={asset.correlation_id ? `Corr-${asset.correlation_id}` : '—'} mono />
+            </dl>
+          </div>
+
+          <div className="pt-3 mt-3 border-t border-slate-100 flex items-center justify-between text-[11px]">
+            <span className="text-slate-500">Scope:</span>
+            <div className="flex items-center gap-1.5 font-mono font-bold">
+              {asset.internet_facing && <span className="px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 text-[9px]">INTERNET FACING</span>}
+              {asset.pci_scope && <span className="px-1.5 py-0.5 rounded bg-blue-100 text-blue-800 text-[9px]">PCI-DSS</span>}
+              {!asset.internet_facing && !asset.pci_scope && <span className="text-slate-400">Internal</span>}
+            </div>
+          </div>
+        </div>
+
+        <div className="glass-panel p-5 rounded-2xl border border-slate-200 flex flex-col justify-between">
           <div>
             <h3 className="text-xs uppercase tracking-wider text-slate-500 font-mono font-bold mb-4 flex items-center gap-2">
               <Shield size={14} className="text-qred" /> Risk Posture &amp; Detection Breakdown
             </h3>
-            <div className="grid grid-cols-4 gap-4">
-              <div className="bg-slate-50 p-3 rounded-2xl border border-slate-200 text-center">
-                <p className="text-[10px] uppercase text-slate-500 font-mono font-bold">Critical</p>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 text-center">
+                <p className="text-[10px] uppercase text-slate-500 font-mono font-bold">Critical (Sev 5)</p>
                 <p className="text-2xl font-extrabold text-qred font-display mt-0.5">{critical}</p>
               </div>
-              <div className="bg-slate-50 p-3 rounded-2xl border border-slate-200 text-center">
-                <p className="text-[10px] uppercase text-slate-500 font-mono font-bold">High</p>
+              <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 text-center">
+                <p className="text-[10px] uppercase text-slate-500 font-mono font-bold">High (Sev 4)</p>
                 <p className="text-2xl font-extrabold text-orange-600 font-display mt-0.5">{high}</p>
               </div>
-              <div className="bg-slate-50 p-3 rounded-2xl border border-slate-200 text-center">
-                <p className="text-[10px] uppercase text-slate-500 font-mono font-bold">Medium</p>
+              <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 text-center">
+                <p className="text-[10px] uppercase text-slate-500 font-mono font-bold">Medium (Sev 3)</p>
                 <p className="text-2xl font-extrabold text-amber-600 font-display mt-0.5">{medium}</p>
               </div>
-              <div className="bg-slate-50 p-3 rounded-2xl border border-slate-200 text-center">
+              <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 text-center">
                 <p className="text-[10px] uppercase text-slate-500 font-mono font-bold">Oldest Age</p>
                 <p className="text-2xl font-extrabold text-slate-900 font-display mt-0.5">{oldest ? `${oldest.age_days}d` : '0d'}</p>
               </div>
@@ -95,13 +122,15 @@ export default function AssetDetail() {
           </div>
 
           {asset.cloud_records && asset.cloud_records.length > 0 && (
-            <div className="mt-4 pt-4 border-t border-slate-100">
-              <p className="text-xs text-slate-500 font-mono font-bold mb-2">Cloud Correlation Records</p>
+            <div className="mt-3 pt-3 border-t border-slate-100">
+              <p className="text-[10px] text-slate-500 font-mono font-bold mb-1.5 uppercase">AWS Inventory Matched Row</p>
               <div className="space-y-1">
                 {asset.cloud_records.map((c, i) => (
-                  <div key={i} className="text-xs text-slate-800 flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-green-500" />
-                    <span>{c.cloud_provider} · {c.instance_id} · Account: {c.account_or_subscription}</span>
+                  <div key={i} className="text-[11px] text-slate-800 flex items-center justify-between">
+                    <span className="font-mono text-qblue">{c.cloud_provider} · {c.instance_id}</span>
+                    <span className="px-1.5 py-0.5 rounded bg-green-50 text-green-700 text-[9px] font-bold border border-green-200">
+                      {c.match_status} ({c.match_method})
+                    </span>
                   </div>
                 ))}
               </div>

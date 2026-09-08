@@ -64,14 +64,35 @@ def list_assets(
             if d.status != "Fixed" and d.vulnerability and d.vulnerability.severity == 4
         )
         sla_breached = any(d.sla_status == "BREACHED" for d in a.detections)
+        account_str = a.cloud_account_name
+        acct_id = None
+        acct_name = account_str
+        if account_str:
+            if "(" in account_str and ")" in account_str:
+                parts = account_str.split("(")
+                acct_name = parts[0].strip()
+                acct_id = parts[1].replace(")", "").strip()
+            elif account_str.isdigit() or account_str.startswith("sub-"):
+                acct_id = account_str
+
         results.append(
             {
                 "id": a.id,
                 "hostname": a.dns or a.netbios or a.fqdn or a.ip,
                 "ip": a.ip,
+                "asset_group": a.asset_group or a.cloud_provider,
                 "cloud_provider": a.cloud_provider,
+                "cloud_instance_id": a.cloud_instance_id,
+                "cloud_account_name": acct_name or a.cloud_account_name,
+                "cloud_account_id": acct_id or (a.cloud_instance_id if a.cloud_instance_id and not acct_id else None),
+                "apm_id": a.apm_id or (a.application.apm_id if a.application else None),
                 "application": a.application.name if a.application else None,
-                "owner": a.owner.name if a.owner else None,
+                "owner": a.app_owner or (a.owner.name if a.owner else None),
+                "app_owner": a.app_owner or (a.owner.name if a.owner else None),
+                "correlation_id": a.correlation_id,
+                "tracking_method": a.tracking_method or "AGENT",
+                "agent_id": a.agent_id,
+                "agent_status": a.agent_status or "Active",
                 "os": a.os,
                 "asset_status": a.asset_status,
                 "critical": crit,
@@ -114,13 +135,32 @@ def asset_detail(asset_id: int, db: Session = Depends(get_db)):
         {
             "cloud_provider": c.cloud_provider,
             "instance_id": c.instance_id,
+            "instance_name": c.instance_name,
             "region": c.region,
+            "resource_group": c.resource_group,
             "account_or_subscription": c.account_or_subscription,
+            "correlation_id": c.correlation_id,
+            "private_ip": c.private_ip,
+            "public_ip": c.public_ip,
+            "status": c.status,
             "match_status": c.match_status,
             "match_method": c.match_method,
         }
         for c in asset.cloud_records
     ]
+
+    # Derive EC2 / Cloud Account ID from account_or_subscription (e.g. "AWS-Prod-Core (112233445566)")
+    account_str = asset.cloud_account_name or (cloud_records[0]["account_or_subscription"] if cloud_records else None)
+    account_id = None
+    account_name = None
+    if account_str:
+        account_name = account_str
+        if "(" in account_str and ")" in account_str:
+            parts = account_str.split("(")
+            account_name = parts[0].strip()
+            account_id = parts[1].replace(")", "").strip()
+        elif account_str.isdigit() or account_str.startswith("sub-"):
+            account_id = account_str
 
     return {
         "id": asset.id,
@@ -128,8 +168,21 @@ def asset_detail(asset_id: int, db: Session = Depends(get_db)):
         "ip": asset.ip,
         "fqdn": asset.fqdn,
         "os": asset.os,
+        "asset_group": asset.asset_group,
         "cloud_provider": asset.cloud_provider,
         "cloud_instance_id": asset.cloud_instance_id,
+        "cloud_account_name": account_name or asset.cloud_account_name,
+        "cloud_account_id": account_id or (asset.cloud_instance_id if asset.cloud_instance_id and not account_id else None),
+        "correlation_id": asset.correlation_id,
+        "apm_id": asset.apm_id or (asset.application.apm_id if asset.application else None),
+        "app_owner": asset.app_owner or (asset.owner.name if asset.owner else None),
+        "business_owner": asset.business_owner,
+        "organization": asset.organization,
+        "internet_facing": asset.internet_facing,
+        "pci_scope": asset.pci_scope,
+        "tracking_method": asset.tracking_method,
+        "agent_id": asset.agent_id,
+        "agent_status": asset.agent_status or "Active",
         "application": asset.application.name if asset.application else None,
         "owner": asset.owner.name if asset.owner else None,
         "last_scan": asset.last_vm_scan,
