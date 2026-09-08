@@ -1,3 +1,4 @@
+from typing import Any, cast
 import datetime as dt
 
 # pyrefly: ignore [missing-import]
@@ -10,11 +11,11 @@ from app.services.sla_engine import compute_sla_for_detection
 
 
 def get_active_client(db: Session) -> QualysClient:
-    conn = db.query(models.QualysConnection).filter_by(is_active=True).first()
+    conn = cast(Any, db.query(models.QualysConnection).filter_by(is_active=True).first())
     if not conn:
         raise RuntimeError("No active Qualys connection configured. Add one under Settings > Qualys.")
-    password = decrypt_secret(conn.encrypted_password)
-    return QualysClient(conn.platform_url, conn.username, password)
+    password = decrypt_secret(str(conn.encrypted_password))
+    return QualysClient(str(conn.platform_url), str(conn.username), password)
 
 
 def _get_or_create_vulnerability(db: Session, qid: str, severity: int | None, vuln_type: str | None) -> models.Vulnerability:
@@ -33,9 +34,9 @@ def _get_or_create_vulnerability(db: Session, qid: str, severity: int | None, vu
 
 
 def _upsert_asset(db: Session, host: HostRecord) -> models.Asset:
-    asset = db.query(models.Asset).filter_by(qualys_host_id=host.host_id).first()
+    asset = cast(Any, db.query(models.Asset).filter_by(qualys_host_id=host.host_id).first())
     if not asset:
-        asset = models.Asset(qualys_host_id=host.host_id)
+        asset = cast(Any, models.Asset(qualys_host_id=host.host_id))
         db.add(asset)
 
     asset.ip = host.ip
@@ -58,7 +59,7 @@ def _upsert_asset(db: Session, host: HostRecord) -> models.Asset:
     
     asset.updated_at = dt.datetime.utcnow()
     db.flush()
-    return asset
+    return cast(models.Asset, asset)
 
 
 def run_sync(db: Session, sync_record: models.SyncHistory) -> None:
@@ -81,7 +82,7 @@ def run_sync(db: Session, sync_record: models.SyncHistory) -> None:
 
             host_det_map = {}
             for existing_d in db.query(models.HostDetection).filter_by(asset_id=asset.id).all():
-                host_det_map[(existing_d.vulnerability_id, existing_d.port, existing_d.protocol)] = existing_d
+                host_det_map[(existing_d.vulnerability_id, existing_d.port, existing_d.protocol)] = cast(Any, existing_d)
 
             for det in host.detections:
                 vuln = _get_or_create_vulnerability(db, det.qid, det.severity, det.type)
@@ -90,12 +91,12 @@ def run_sync(db: Session, sync_record: models.SyncHistory) -> None:
                 existing = host_det_map.get(det_key)
                 is_new = existing is None
                 if is_new:
-                    existing = models.HostDetection(
+                    existing = cast(Any, models.HostDetection(
                         asset_id=asset.id,
                         vulnerability_id=vuln.id,
                         port=det.port,
                         protocol=det.protocol,
-                    )
+                    ))
                     db.add(existing)
                     host_det_map[det_key] = existing
                     new_findings += 1
@@ -114,7 +115,7 @@ def run_sync(db: Session, sync_record: models.SyncHistory) -> None:
                 if existing.status == "Fixed" and was_active:
                     fixed_findings += 1
 
-                compute_sla_for_detection(db, existing, vuln)
+                compute_sla_for_detection(db, cast(models.HostDetection, existing), vuln)
                 findings_processed += 1
 
             db.commit()
@@ -123,18 +124,21 @@ def run_sync(db: Session, sync_record: models.SyncHistory) -> None:
         from app.services.matching_engine import match_all_post_scan
         match_all_post_scan(db)
 
-        sync_record.status = "success"
+        rec = cast(Any, sync_record)
+        rec.status = "success"
     except Exception as exc:  # noqa: BLE001
         db.rollback()
-        sync_record.status = "failed"
-        sync_record.error_message = str(exc)
+        rec = cast(Any, sync_record)
+        rec.status = "failed"
+        rec.error_message = str(exc)
         raise
     finally:
-        sync_record.finished_at = dt.datetime.utcnow()
-        sync_record.hosts_processed = hosts_processed
-        sync_record.findings_processed = findings_processed
-        sync_record.new_findings = new_findings
-        sync_record.fixed_findings = fixed_findings
+        rec = cast(Any, sync_record)
+        rec.finished_at = dt.datetime.utcnow()
+        rec.hosts_processed = hosts_processed
+        rec.findings_processed = findings_processed
+        rec.new_findings = new_findings
+        rec.fixed_findings = fixed_findings
         db.add(sync_record)
         db.commit()
 
