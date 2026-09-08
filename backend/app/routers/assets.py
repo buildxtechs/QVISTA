@@ -320,23 +320,31 @@ def get_cloud_agents_overview(
     # OS Distribution
     os_counts: dict[str, int] = {}
     for a in agent_assets:
-        os_label = "Linux"
+        os_label = "Linux Enterprise"
         if a.os:
             os_lower = a.os.lower()
             if "windows" in os_lower:
                 os_label = "Windows Server"
             elif "ubuntu" in os_lower:
                 os_label = "Ubuntu Linux"
-            elif "amazon" in os_lower:
+            elif "amazon" in os_lower or "amzn" in os_lower:
                 os_label = "Amazon Linux"
-            elif "red hat" in os_lower or "rhel" in os_lower:
+            elif "red hat" in os_lower or "rhel" in os_lower or "centos" in os_lower:
                 os_label = "Red Hat Enterprise Linux"
             elif "debian" in os_lower:
                 os_label = "Debian Linux"
-            elif "cisco" in os_lower or "router" in os_lower:
+            elif "suse" in os_lower:
+                os_label = "SUSE Linux"
+            elif "oracle" in os_lower:
+                os_label = "Oracle Enterprise Linux"
+            elif "cisco" in os_lower or "router" in os_lower or "firewall" in os_lower or "switch" in os_lower:
                 os_label = "Network Appliance OS"
+            elif "unix" in os_lower or "bsd" in os_lower or "solaris" in os_lower:
+                os_label = "UNIX / BSD"
+            elif any(k in os_lower for k in ("linux", "kernel", "gnu")):
+                os_label = "Linux Enterprise"
             else:
-                os_label = a.os.split()[0] if a.os else "Linux"
+                os_label = "Linux Enterprise"
         os_counts[os_label] = os_counts.get(os_label, 0) + 1
 
     # Vulnerability counts on agent assets
