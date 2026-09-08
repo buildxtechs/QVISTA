@@ -12,17 +12,24 @@ def utcnow():
     return dt.datetime.utcnow()
 
 
-def classify_asset_group(os_str: str | None, cloud_provider: str | None) -> str:
-    """Classifies an asset into AWS, AZURE, or NETWORK based on OS and validated cloud inventory."""
+def classify_asset_group(os_str: str | None, cloud_provider: str | None = None, dns_str: str | None = None) -> str:
+    """Classifies an asset into AWS, AZURE, or NETWORK based on OS, DNS/hostname, and validated cloud inventory."""
     if os_str:
         os_lower = os_str.lower()
         network_keywords = [
-            "cisco", "ios", "nx-os", "asa", "catalyst", "junos", "juniper",
+            "cisco", "ios", "nx-os", "asa", "catalyst", "nexus", "junos", "juniper",
             "fortinet", "fortios", "palo alto", "pan-os", "f5", "big-ip",
             "arista", "eos", "router", "switch", "firewall", "checkpoint",
-            "gaia", "sonicwall", "brocade", "vyos", "netscaler", "citrix adc"
+            "gaia", "sonicwall", "brocade", "vyos", "netscaler", "citrix adc",
+            "ion ", "tandberg", "network", "appliance", "vpn", "vfw"
         ]
-        if any(k in os_lower for k in network_keywords):
+        # Exclude servers with general OS names unless explicit network gear
+        if any(k in os_lower for k in network_keywords) and not any(s in os_lower for s in ("windows", "ubuntu", "amazon linux", "red hat", "rhel", "debian", "suse", "centos", "oracle linux")):
+            return "NETWORK"
+
+    if dns_str:
+        dns_lower = dns_str.lower()
+        if any(k in dns_lower for k in ("-vfw", "-firewall", "-rtr-", "-sw-", "cisco-", "gw-dc", "core-sw")):
             return "NETWORK"
 
     if cloud_provider and cloud_provider.upper() in ("AWS", "AZURE"):
