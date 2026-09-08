@@ -86,7 +86,11 @@ def _parse_dt(value: str | None) -> dt.datetime | None:
 
 class QualysClient:
     def __init__(self, platform_url: str, username: str, password: str, timeout: int = DEFAULT_TIMEOUT):
-        self.base_url = platform_url.rstrip("/")
+        url = platform_url.rstrip("/")
+        # Qualys API endpoints use qualysapi.<platform> rather than qualysguard.<platform>
+        if "qualysguard." in url:
+            url = url.replace("qualysguard.", "qualysapi.")
+        self.base_url = url
         self.auth = (username, password)
         self.timeout = timeout
         self.headers = {"X-Requested-With": "VulnOps/1.0"}
@@ -98,7 +102,7 @@ class QualysClient:
             resp = requests.get(url, auth=self.auth, headers=self.headers, timeout=self.timeout)
         except requests.exceptions.ConnectionError as e:
             raise QualysAPIError(
-                f"Network / DNS connection failed for platform URL '{self.base_url}'. Please verify your URL format (e.g. https://qualysapi.qualys.com) and internet connectivity."
+                f"Network / DNS connection failed for platform URL '{self.base_url}'. Please verify your URL format (e.g. https://qualysapi.qg2.apps.qualys.com) and internet connectivity."
             )
         except requests.exceptions.Timeout:
             raise QualysAPIError(
@@ -125,10 +129,9 @@ class QualysClient:
         url = f"{self.base_url}/api/2.0/fo/asset/host/vm/detection/"
         params = {
             "action": "list",
-            "show_asset_id": 1,
-            "show_tags": 1,
-            "show_cloud_resource_id": 1,
-            "truncation_limit": truncation_limit,
+            "show_asset_id": "1",
+            "show_tags": "1",
+            "truncation_limit": str(truncation_limit),
             "output_format": "XML",
         }
         if vm_scan_since:
@@ -142,7 +145,17 @@ class QualysClient:
                 next_url, data=next_params, auth=self.auth, headers=self.headers, timeout=self.timeout
             )
             if resp.status_code != 200:
-                raise QualysAPIError(f"Qualys API error {resp.status_code}: {resp.text[:500]}")
+                # Provide descriptive error if Qualys returns XML error message
+                err_text = resp.text
+                if "<TEXT>" in err_text:
+                    try:
+                        err_root = etree.fromstring(resp.content)
+                        text_node = err_root.find(".//TEXT")
+                        if text_node is not None and text_node.text:
+                            err_text = text_node.text.strip()
+                    except Exception:
+                        pass
+                raise QualysAPIError(f"Qualys API error {resp.status_code}: {err_text[:500]}")
 
             root = etree.fromstring(resp.content)
             for host_el in root.iter("HOST"):
