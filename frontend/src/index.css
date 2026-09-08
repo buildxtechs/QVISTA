@@ -1,0 +1,113 @@
+@import "tailwindcss/base";
+@import "tailwindcss/components";
+@import "tailwindcss/utilities";
+
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  html, body, #root {
+    height: 100%;
+  }
+
+  body {
+    margin: 0;
+    background: #FFFFFF;
+    color: #0F172A;
+    font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  h1, h2, h3, h4, .font-display {
+    font-family: "Space Grotesk", "Inter", sans-serif;
+  }
+
+  code, pre, .font-mono {
+    font-family: "IBM Plex Mono", monospace;
+  }
+}
+
+::selection {
+  background: #DC2626;
+  color: #FFFFFF;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #F8FAFC;
+}
+::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #2563EB;
+}
+
+/* Premium White, Blue & Red Light Mode Panels and KPI Cards */
+.glass-panel {
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  box-shadow: 0 1px 4px 0 rgba(15, 23, 42, 0.04), 0 1px 2px -1px rgba(15, 23, 42, 0.02);
+}
+
+.glass-panel-red {
+  background: #FEF2F2;
+  border: 1px solid #FECACA;
+  box-shadow: 0 4px 14px -1px rgba(220, 38, 38, 0.08);
+}
+
+.glass-panel-blue {
+  background: #EFF6FF;
+  border: 1px solid #BFDBFE;
+  box-shadow: 0 4px 14px -1px rgba(37, 99, 235, 0.08);
+}
+
+.kpi-card {
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 16px;
+  box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.03);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.kpi-card:hover {
+  border-color: #2563EB;
+  box-shadow: 0 8px 20px -3px rgba(37, 99, 235, 0.12);
+  transform: translateY(-2px);
+}
+
+.cyber-tab-active {
+  background: #2563EB;
+  border: 1px solid #2563EB;
+  color: #FFFFFF;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25);
+}
+
+.cyber-badge-red {
+  background: #FEF2F2;
+  color: #DC2626;
+  border: 1px solid #FECACA;
+}
+
+.cyber-badge-blue {
+  background: #EFF6FF;
+  color: #2563EB;
+  border: 1px solid #BFDBFE;
+}
+
+/* Custom Chart Styling for Light Theme */
+.recharts-cartesian-axis-tick text {
+  fill: #64748B;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 11px;
+}
+.recharts-cartesian-grid-horizontal line,
+.recharts-cartesian-grid-vertical line {
+  stroke: #E2E8F0;
+}
